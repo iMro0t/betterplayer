@@ -13,14 +13,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import com.jhomlala.better_player.DataSourceUtils.getUserAgent
-import com.jhomlala.better_player.DataSourceUtils.isHTTP
-import com.jhomlala.better_player.DataSourceUtils.getDataSourceFactory
-import io.flutter.plugin.common.EventChannel
-import io.flutter.view.TextureRegistry.SurfaceTextureEntry
-import io.flutter.plugin.common.MethodChannel
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
-import com.google.android.exoplayer2.ui.PlayerNotificationManager
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import com.google.android.exoplayer2.drm.DrmSessionManager
 import androidx.work.WorkManager
@@ -55,7 +48,7 @@ import androidx.media.session.MediaButtonReceiver
 import androidx.work.Data
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.audio.AudioAttributes
-import com.google.android.exoplayer2.drm.DrmSessionManagerProvider
+import com.google.android.exoplayer2.drm.*
 import com.google.android.exoplayer2.ext.mediasession.MediaSessionConnector
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector.SelectionOverride
 import com.google.android.exoplayer2.trackselection.TrackSelectionOverrides
@@ -63,8 +56,9 @@ import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultDataSource
 import com.google.android.exoplayer2.util.Util
 import java.io.File
-import java.lang.Exception
-import java.lang.IllegalStateException
+import java.net.CookieHandler
+import java.net.CookieManager
+import java.net.CookiePolicy
 import java.util.*
 import kotlin.math.max
 import kotlin.math.min
@@ -95,8 +89,14 @@ internal class BetterPlayer(
     private val customDefaultLoadControl: CustomDefaultLoadControl =
         customDefaultLoadControl ?: CustomDefaultLoadControl()
     private var lastSendBufferedPosition = 0L
+    private var cookieManager: CookieManager? = null
 
     init {
+        cookieManager = CookieManager()
+        cookieManager!!.setCookiePolicy(CookiePolicy.ACCEPT_ALL)
+        if (CookieHandler.getDefault() != cookieManager) {
+            CookieHandler.setDefault(cookieManager);
+        }
         val loadBuilder = DefaultLoadControl.Builder()
         loadBuilder.setBufferDurationsMs(
             this.customDefaultLoadControl.minBufferMs,
@@ -191,7 +191,7 @@ internal class BetterPlayer(
                 )
             }
         } else {
-            dataSourceFactory = DefaultDataSource.Factory(context)
+            dataSourceFactory = DefaultDataSourceFactory(context, userAgent)
         }
         val mediaSource = buildMediaSource(uri, dataSourceFactory, formatHint, cacheKey, context)
         if (overriddenDuration != 0L) {
@@ -608,6 +608,7 @@ internal class BetterPlayer(
      * Create media session which will be used in notifications, pip mode.
      *
      * @param context                - android context
+     * @param setupControlDispatcher - should add control dispatcher to created MediaSession
      * @return - configured MediaSession instance
      */
     @SuppressLint("InlinedApi")

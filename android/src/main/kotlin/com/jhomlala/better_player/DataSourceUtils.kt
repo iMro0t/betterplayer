@@ -3,18 +3,18 @@ package com.jhomlala.better_player
 import android.net.Uri
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
+import java.util.Locale
 
 internal object DataSourceUtils {
-    private const val USER_AGENT = "User-Agent"
+    private const val USER_AGENT = "user-agent"
     private const val USER_AGENT_PROPERTY = "http.agent"
 
     @JvmStatic
     fun getUserAgent(headers: Map<String, String>?): String? {
         var userAgent = System.getProperty(USER_AGENT_PROPERTY)
-        if (headers != null && headers.containsKey(USER_AGENT)) {
-            val userAgentHeader = headers[USER_AGENT]
-            if (userAgentHeader != null) {
-                userAgent = userAgentHeader
+        headers?.forEach {
+            if (it.key.lowercase(Locale.getDefault()) == USER_AGENT) {
+                userAgent = it.value
             }
         }
         return userAgent

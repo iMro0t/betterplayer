@@ -5,6 +5,7 @@
 // Dart imports:
 import 'dart:async';
 import 'dart:io';
+
 import 'package:better_player/src/configuration/better_player_buffering_configuration.dart';
 import 'package:better_player/src/video_player/video_player_platform_interface.dart';
 import 'package:flutter/material.dart';
@@ -585,8 +586,11 @@ class VideoPlayerController extends ValueNotifier<VideoPlayerValue> {
   /// [height] specifies height of the selected track
   /// [bitrate] specifies bitrate of the selected track
   Future<void> setTrackParameters(int? width, int? height, int? bitrate) async {
-    await _videoPlayerPlatform.setTrackParameters(
-        _textureId, width, height, bitrate);
+    if (width != null && height != null && width != 0 && height != 0) {
+      value = value.copyWith(size: Size(width.toDouble(), height.toDouble()));
+      await _videoPlayerPlatform.setTrackParameters(
+          _textureId, width, height, bitrate);
+    }
   }
 
   Future<void> enablePictureInPicture(
